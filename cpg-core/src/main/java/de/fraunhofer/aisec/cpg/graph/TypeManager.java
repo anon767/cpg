@@ -124,7 +124,7 @@ public class TypeManager {
     private boolean noFrontendWarningIssued = false;
 
     public static void reset() {
-        INSTANCE = new TypeManager();
+        INSTANCE.set(new TypeManager());
     }
 
     /**
