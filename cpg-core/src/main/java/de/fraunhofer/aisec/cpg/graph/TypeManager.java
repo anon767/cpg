@@ -70,7 +70,7 @@ public class TypeManager {
     private static final Pattern funPointerPattern =
             Pattern.compile("\\(?\\*(?<alias>[^()]+)\\)?\\(.*\\)");
     @NonNull
-    private static ThreadLocal<TypeManager> INSTANCE = ThreadLocal.withInitial(() -> new TypeManager());
+    private static ThreadLocal<TypeManager> INSTANCE = ThreadLocal.withInitial(TypeManager::new);
     private static boolean typeSystemActive = true;
 
     public enum Language {
