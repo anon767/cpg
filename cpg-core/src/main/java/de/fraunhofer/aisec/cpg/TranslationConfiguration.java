@@ -28,6 +28,9 @@ package de.fraunhofer.aisec.cpg;
 import static de.fraunhofer.aisec.cpg.frontends.cpp.CXXLanguageFrontend.CXX_EXTENSIONS;
 import static de.fraunhofer.aisec.cpg.frontends.cpp.CXXLanguageFrontend.CXX_HEADER_EXTENSIONS;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import de.fraunhofer.aisec.cpg.frontends.CompilationDatabase;
@@ -38,6 +41,8 @@ import de.fraunhofer.aisec.cpg.passes.*;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -220,6 +225,8 @@ public class TranslationConfiguration {
     return topLevel;
   }
 
+  @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "name")
+  @JsonIdentityReference(alwaysAsId = true)
   public List<Pass> getRegisteredPasses() {
     return this.passes;
   }
@@ -551,5 +558,10 @@ public class TranslationConfiguration {
           inferenceConfiguration,
           compilationDatabase);
     }
+  }
+
+  @Override
+  public String toString() {
+    return ToStringBuilder.reflectionToString(this, ToStringStyle.JSON_STYLE);
   }
 }

@@ -34,9 +34,7 @@ import de.fraunhofer.aisec.cpg.graph.TypeManager;
 import de.fraunhofer.aisec.cpg.graph.types.PointerType;
 import de.fraunhofer.aisec.cpg.graph.types.Type;
 import de.fraunhofer.aisec.cpg.helpers.Util;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.neo4j.ogm.annotation.Transient;
@@ -99,26 +97,32 @@ public class UnaryOperator extends Expression implements TypeListener {
   }
 
   private boolean getsDataFromInput(TypeListener curr, TypeListener target) {
-    if (checked.contains(curr)) {
-      return false;
-    }
-    checked.add(curr);
+    List<TypeListener> worklist = new ArrayList<>();
+    worklist.add(curr);
+    while (!worklist.isEmpty()) {
+      TypeListener tl = worklist.remove(0);
+      if (!checked.contains(tl)) {
+        checked.add(tl);
 
-    if (curr == target) {
-      return true;
-    }
+        if (tl == target) {
+          return true;
+        }
 
-    if (curr instanceof HasType) {
-      return ((HasType) curr)
-          .getTypeListeners().stream().anyMatch(l -> getsDataFromInput(l, target));
+        if (curr instanceof HasType) {
+          worklist.addAll(((HasType) curr).getTypeListeners());
+        }
+      }
     }
     return false;
   }
 
   private boolean getsDataFromInput(TypeListener listener) {
     checked.clear();
-    return input != null
-        && input.getTypeListeners().stream().anyMatch(l -> getsDataFromInput(l, listener));
+    if (input == null) return false;
+    for (var l : input.getTypeListeners()) {
+      if (getsDataFromInput(l, listener)) return true;
+    }
+    return false;
   }
 
   public String getOperatorCode() {
@@ -147,7 +151,7 @@ public class UnaryOperator extends Expression implements TypeListener {
   }
 
   @Override
-  public void typeChanged(HasType src, HasType root, Type oldType) {
+  public void typeChanged(HasType src, Collection<HasType> root, Type oldType) {
     if (!TypeManager.isTypeSystemActive()) {
       return;
     }
@@ -178,7 +182,7 @@ public class UnaryOperator extends Expression implements TypeListener {
       // We are a fuzzy parser, so while this should not happen, there is no guarantee that input is
       // not null
       if (input != null) {
-        input.setType(newType, this);
+        input.setType(newType, new ArrayList<>(List.of(this)));
       }
     }
 
@@ -188,7 +192,8 @@ public class UnaryOperator extends Expression implements TypeListener {
   }
 
   @Override
-  public void possibleSubTypesChanged(HasType src, HasType root, Set<Type> oldSubTypes) {
+  public void possibleSubTypesChanged(
+      HasType src, Collection<HasType> root, Set<Type> oldSubTypes) {
     if (!TypeManager.isTypeSystemActive()) {
       return;
     }

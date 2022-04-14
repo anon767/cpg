@@ -32,6 +32,7 @@ import de.fraunhofer.aisec.cpg.graph.HasType.TypeListener;
 import de.fraunhofer.aisec.cpg.graph.Node;
 import de.fraunhofer.aisec.cpg.graph.SubGraph;
 import de.fraunhofer.aisec.cpg.graph.TypeManager;
+import de.fraunhofer.aisec.cpg.graph.edge.Properties;
 import de.fraunhofer.aisec.cpg.graph.edge.PropertyEdge;
 import de.fraunhofer.aisec.cpg.graph.types.PointerType.PointerOrigin;
 import de.fraunhofer.aisec.cpg.graph.types.Type;
@@ -57,6 +58,13 @@ public class InitializerListExpression extends Expression implements TypeListene
     return this.initializers;
   }
 
+  public void addInitializer(Expression initializer) {
+    var edge = new PropertyEdge<>(this, initializer);
+    edge.addProperty(Properties.INDEX, this.initializers.size());
+
+    this.initializers.add(edge);
+  }
+
   public void setInitializers(List<Expression> initializers) {
     if (this.initializers != null) {
       this.initializers.forEach(
@@ -76,7 +84,7 @@ public class InitializerListExpression extends Expression implements TypeListene
   }
 
   @Override
-  public void typeChanged(HasType src, HasType root, Type oldType) {
+  public void typeChanged(HasType src, Collection<HasType> root, Type oldType) {
     if (!TypeManager.isTypeSystemActive()) {
       return;
     }
@@ -118,7 +126,8 @@ public class InitializerListExpression extends Expression implements TypeListene
   }
 
   @Override
-  public void possibleSubTypesChanged(HasType src, HasType root, Set<Type> oldSubTypes) {
+  public void possibleSubTypesChanged(
+      HasType src, Collection<HasType> root, Set<Type> oldSubTypes) {
     if (!TypeManager.isTypeSystemActive()) {
       return;
     }

@@ -44,15 +44,15 @@ class CompressLLVMPass : Pass() {
 
         val flatAST = SubgraphWalker.flattenAST(t)
         // Get all goto statements
-        val allGotos = flatAST.filter { n -> n is GotoStatement }
+        val allGotos = flatAST.filterIsInstance<GotoStatement>()
         // Get all LabelStatements which are only referenced from a single GotoStatement
         val singleEntryLabels =
-            flatAST.filter { n -> n is LabelStatement }.filter { l ->
-                allGotos.filter { g -> (g as GotoStatement).targetLabel == l }.size == 1
+            flatAST.filterIsInstance<LabelStatement>().filter { l ->
+                allGotos.filter { g -> g.targetLabel == l }.size == 1
             }
+
         // Get all GotoStatements which have to be replaced in the AST
-        val gotosToReplace =
-            allGotos.filter { g -> (g as GotoStatement).targetLabel in singleEntryLabels }
+        val gotosToReplace = allGotos.filter { g -> g.targetLabel in singleEntryLabels }
 
         // Enforce the order: First IfStatements, then SwitchStatements, then the rest. This
         // prevents to treat the final goto in the case or default statement as a normal
@@ -68,14 +68,24 @@ class CompressLLVMPass : Pass() {
                 // Replace the then-statement with the basic block it jumps to iff we found that
                 // its
                 // goto statement is the only one jumping to the target
-                if (node.thenStatement in gotosToReplace) {
+                if (node.thenStatement in gotosToReplace &&
+                        node !in
+                            SubgraphWalker.flattenAST(
+                                (node.thenStatement as GotoStatement).targetLabel.subStatement
+                            )
+                ) {
                     node.thenStatement =
                         (node.thenStatement as GotoStatement).targetLabel.subStatement
                 }
                 // Replace the else-statement with the basic block it jumps to iff we found that
                 // its
                 // goto statement is the only one jumping to the target
-                if (node.elseStatement in gotosToReplace) {
+                if (node.elseStatement in gotosToReplace &&
+                        node !in
+                            SubgraphWalker.flattenAST(
+                                (node.elseStatement as GotoStatement).targetLabel.subStatement
+                            )
+                ) {
                     node.elseStatement =
                         (node.elseStatement as GotoStatement).targetLabel.subStatement
                 }
@@ -85,7 +95,12 @@ class CompressLLVMPass : Pass() {
                 val caseBodyStatements = node.statement as CompoundStatement
                 val newStatements = caseBodyStatements.statements.toMutableList()
                 for (i in 0 until newStatements.size) {
-                    if (newStatements[i] in gotosToReplace) {
+                    if (newStatements[i] in gotosToReplace &&
+                            newStatements[i] !in
+                                SubgraphWalker.flattenAST(
+                                    (newStatements[i] as GotoStatement).targetLabel.subStatement
+                                )
+                    ) {
                         newStatements[i] =
                             (newStatements[i] as GotoStatement).targetLabel.subStatement
                     }
@@ -134,8 +149,14 @@ class CompressLLVMPass : Pass() {
                 // Get the last statement in a CompoundStatement and replace a goto statement
                 // iff it is the only one jumping to the target
                 val goto = node.statements.lastOrNull()
-                if (goto != null && goto in gotosToReplace) {
-                    val subStatement = (goto as GotoStatement).targetLabel.subStatement
+                if (goto != null &&
+                        goto in gotosToReplace &&
+                        node !in
+                            SubgraphWalker.flattenAST(
+                                (goto as GotoStatement).targetLabel.subStatement
+                            )
+                ) {
+                    val subStatement = goto.targetLabel.subStatement
                     val newStatements = node.statements.dropLast(1).toMutableList()
                     newStatements.addAll((subStatement as CompoundStatement).statements)
                     node.statements = newStatements
