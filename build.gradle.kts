@@ -141,7 +141,7 @@ subprojects {
     }
 
     java {
-        withJavadocJar()
+        //withJavadocJar()
         withSourcesJar()
     }
 
