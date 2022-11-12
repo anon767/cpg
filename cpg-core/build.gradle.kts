@@ -108,7 +108,10 @@ dependencies {
     api("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.0")
 
     // Eclipse dependencies
-    api("org.eclipse.platform:org.eclipse.core.runtime:3.24.0")
+    api("org.eclipse.platform:org.eclipse.core.runtime:3.26.0") {
+        // For some reason, this group name is wrong
+        exclude("org.osgi.service", "org.osgi.service.prefs")
+    }
     api("com.ibm.icu:icu4j:71.1")
 
     // CDT
