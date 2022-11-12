@@ -54,7 +54,7 @@ public class TypeManager {
   // TODO: document/remove this regexp, merge with other pattern
   private static final Pattern funPointerPattern =
       Pattern.compile("\\(?\\*(?<alias>[^()]+)\\)?\\(.*\\)");
-  @NotNull private static TypeManager instance = new TypeManager();
+  private static ThreadLocal<TypeManager> INSTANCE = ThreadLocal.withInitial(TypeManager::new);
   private static boolean typeSystemActive = true;
 
   @NotNull
@@ -89,7 +89,7 @@ public class TypeManager {
   private final Set<Type> secondOrderTypes = Collections.synchronizedSet(new HashSet<>());
 
   public static void reset() {
-    instance = new TypeManager();
+    INSTANCE.set(new TypeManager());
   }
 
   /**
@@ -258,7 +258,7 @@ public class TypeManager {
   private TypeManager() {}
 
   public static TypeManager getInstance() {
-    return instance;
+    return INSTANCE.get();
   }
 
   public static boolean isTypeSystemActive() {
